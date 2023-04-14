@@ -1,0 +1,56 @@
+from fpdf import FPDF
+import sqlite3
+import jinja2
+
+# Define a subclass of FPDF with HTML support
+class MyFPDF(FPDF):
+    pass
+
+# Step 1: Query the database
+conn = sqlite3.connect('mydatabase.db')
+cursor = conn.cursor()
+cursor.execute('SELECT * FROM mytable')
+data = cursor.fetchall()
+
+# Step 2: Load the jinja2 template
+template_string = """
+<html>
+  <head>
+    <title>My PDF</title>
+  </head>
+  <body>
+    <h1>My PDF</h1>
+    <table>
+      {% for row in data %}
+      <tr>
+        <td>{{ row[0] }}</td>
+        <td>{{ row[1] }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </body>
+</html>
+"""
+template = jinja2.Template(template_string)
+
+# Step 3: Render the jinja2 template
+html_string = template.render(data=data)
+
+# Step 4: Generate the PDF file
+pdf = MyFPDF()
+pdf.add_page()
+
+# Parse the HTML string and manually create a table in the PDF
+pdf.set_font('Arial', '', 14)
+pdf.cell(0, 10, 'My PDF', 0, 1)
+pdf.ln(10)
+pdf.set_font('Arial', '', 12)
+pdf.cell(60, 10, 'Column 1', 1)
+pdf.cell(60, 10, 'Column 2', 1)
+pdf.ln()
+for row in data:
+    pdf.cell(60, 10, str(row[0]), 1)
+    pdf.cell(60, 10, str(row[1]), 1)
+    pdf.ln()
+
+pdf.output('myoutput.pdf')
