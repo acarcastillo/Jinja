@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>My Report</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        font-size: 12px;
+      }
+      h1, h2, h3 {
+        font-weight: bold;
+        text-align: center;
+      }
+      table {
+        border-collapse: collapse;
+        margin: 20px auto;
+        width: 100%;
+      }
+      th, td {
+        border: 1px solid black;
+        padding: 5px;
+        text-align: center;
+      }
+      th {
+        background-color: #CCC;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>My Report</h1>
+    <table>
+      <thead>
+        <tr>
+          {% for col in cols %}
+          <th>{{ col }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          {% for col in row %}
+          <td>{{ col }}</td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </body>
+</html>
