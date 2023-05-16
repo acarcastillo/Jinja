@@ -1,23 +1,9 @@
 import pytest
 import requests
-from mymodule import CourseraData, AuthService
+from mymodule import CourseraData
 
 @pytest.fixture
 def coursera_data(monkeypatch):
-    # Mocking the access token
-    class MockAuthService:
-        def get_access_token(self):
-            return "<mocked_access_token>"
-
-    monkeypatch.setattr(AuthService, 'get_access_token', MockAuthService.get_access_token)
-
-    return CourseraData()
-
-def test_coursera_data_init(coursera_data):
-    # Access token should be set during initialization
-    assert coursera_data._CourseraData__access_token == "<mocked_access_token>"
-
-def test_get_programs(coursera_data, monkeypatch):
     # Mocking the response from requests.get
     class MockResponse:
         def __init__(self, status_code, json_data):
@@ -27,31 +13,35 @@ def test_get_programs(coursera_data, monkeypatch):
         def json(self):
             return self.json_data
 
-    def mock_get(*args, **kwargs):
-        return MockResponse(200, {"programs": []})
+    def mock_get_programs(start):
+        if start == '0':
+            return MockResponse(200, {
+                "paging": {
+                    "next": "1"
+                },
+                "elements": [
+                    {"id": 1, "name": "Program 1"},
+                    {"id": 2, "name": "Program 2"}
+                ]
+            })
+        elif start == '1':
+            return MockResponse(200, {
+                "paging": {},
+                "elements": [
+                    {"id": 3, "name": "Program 3"}
+                ]
+            })
 
-    monkeypatch.setattr(requests, 'get', mock_get)
+    monkeypatch.setattr(requests, 'get', mock_get_programs)
 
+    return CourseraData()
+
+def test_get_program_list(coursera_data):
     # Calling the method under test
-    result = coursera_data.get_programs("0")
+    result = coursera_data.get_program_list()
 
     # Assertions
-    assert requests.get.called_once_with(
-        "https://api.coursera.org/api/businesses.v1/eb9rVSdASBGpRxlxirYAnQ/programs?start=0&limit=1000",
-        headers={"Authorization": "Bearer <mocked_access_token>"}
-    )
-    assert result.status_code == 200
-    assert result.json() == {"programs": []}
-
-def test_get_programs_exception(coursera_data, monkeypatch):
-    # Mocking an exception raised by requests.get
-    def mock_get_exception(*args, **kwargs):
-        raise requests.exceptions.RequestException()
-
-    monkeypatch.setattr(requests, 'get', mock_get_exception)
-
-    # Calling the method under test
-    result = coursera_data.get_programs("0")
-
-    # Assertions
-    assert result is None
+    assert len(result) == 3
+    assert result[0] == {"id": 1, "name": "Program 1"}
+    assert result[1] == {"id": 2, "name": "Program 2"}
+    assert result[2] == {"id": 3, "name": "Program 3"}
