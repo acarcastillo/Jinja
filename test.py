@@ -1,51 +1,67 @@
 import pytest
-from mymodule import format_data
+from mymodule import Transform
 
-def test_format_data():
-    # Test case 1: Valid row with contentIds
-    row1 = {
-        'name': 'Program 1',
-        'tagline': 'Tagline 1',
-        'id': '123',
-        'url': 'https://www.example.com/program1',
-        'contentIds': [{'contentId': 'content1'}, {'contentId': 'content2'}, {'contentId': 'content3'}]
-    }
-    expected1 = {
-        'learningProvider': 'Coursera',
-        'programName': 'Program 1',
-        'tagline': 'Tagline 1',
-        'id': '123',
-        'url': 'https://www.example.com/program1',
-        'contentIDs': 'content1;content2;content3'
-    }
-    assert format_data(row1) == expected1
+class TestTransform:
+    @pytest.fixture
+    def transform(self):
+        return Transform()
 
-    # Test case 2: Valid row without contentIds
-    row2 = {
-        'name': 'Program 2',
-        'tagline': 'Tagline 2',
-        'id': '456',
-        'url': 'https://www.example.com/program2',
-        'contentIds': []
-    }
-    expected2 = {
-        'learningProvider': 'Coursera',
-        'programName': 'Program 2',
-        'tagline': 'Tagline 2',
-        'id': '456',
-        'url': 'https://www.example.com/program2',
-        'contentIDs': ''
-    }
-    assert format_data(row2) == expected2
+    def test_set_slug_with_value(self, transform):
+        element = {'tag': 'value'}
+        assert transform.set_slug(element, 'tag') == 'value'
 
-    # Test case 3: Empty row
-    row3 = {}
-    expected3 = {
-        'learningProvider': 'Coursera',
-        'programName': None,
-        'tagline': None,
-        'id': None,
-        'url': None,
-        'contentIDs': ''
-    }
-    assert format_data(row3) == expected3
+    def test_set_slug_with_none(self, transform):
+        element = {}
+        assert transform.set_slug(element, 'tag') == 'Null'
+
+    def test_set_difficulty_level_with_value(self, transform):
+        element = {'tag': 'value'}
+        assert transform.set_difficulty_level(element, 'tag') == 'value'
+
+    def test_set_difficulty_level_with_none(self, transform):
+        element = {}
+        assert transform.set_difficulty_level(element, 'tag') == 'Null'
+
+    def test_set_program_id_with_multiple_programs(self, transform):
+        element = {'programs': [{'id': '1'}, {'id': '2'}, {'id': '3'}]}
+        assert transform.set_program_id(element, 'programs', 'id') == '1;2;3'
+
+    def test_set_program_id_with_single_program(self, transform):
+        element = {'programs': [{'id': '1'}]}
+        assert transform.set_program_id(element, 'programs', 'id') == '1'
+
+    def test_set_sub_languages_with_multiple_languages(self, transform):
+        element = {'languages': ['en', 'es', 'fr']}
+        assert transform.set_sub_languages(element, 'languages') == 'en;es;fr'
+
+    def test_set_sub_languages_with_single_language(self, transform):
+        element = {'languages': ['en']}
+        assert transform.set_sub_languages(element, 'languages') == 'en'
+
+    def test_set_partners_with_multiple_partners(self, transform):
+        element = {'partners': [{'name': 'Partner 1'}, {'name': 'Partner 2'}, {'name': 'Partner 3'}]}
+        assert transform.set_partners(element, 'partners', 'name') == 'Partner 1;Partner 2;Partner 3'
+
+    def test_set_partners_with_single_partner(self, transform):
+        element = {'partners': [{'name': 'Partner 1'}]}
+        assert transform.set_partners(element, 'partners', 'name') == 'Partner 1'
+
+    def test_set_courses_ids(self, transform):
+        element = {'extraMetadata': {'definition': {'courseIds': [{'contentId': 'course1'}, {'contentId': 'course2'}]}}}
+        assert transform.set_courses_ids(element) == 'course1;course2'
+
+    def test_set_estimated_learning_time_with_value(self, transform):
+        element = {'extraMetadata': {'definition': {'estimatedLearningTime': 10}}}
+        assert transform.set_estimated_learning_time(element) == '10'
+
+    def test_set_estimated_learning_time_with_none(self, transform):
+        element = {'extraMetadata': {'definition': {}}}
+        assert transform.set_estimated_learning_time(element) == 'Null'
+
+    def test_set_skills_with_value(self, transform):
+        element = {'extraMetadata': {'definition': {'skills': [{'skillName': 'Skill 1'}, {'skillName': 'Skill 2'}]}}}
+        assert transform.set_skills(element) == 'Skill 1;Skill 2'
+
+    def test_set_skills_with_none(self, transform):
+        element = {'extraMetadata': {'definition': {}}}
+        assert transform.set_skills(element) == 'Null'
