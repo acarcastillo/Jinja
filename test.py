@@ -1,67 +1,46 @@
 import pytest
-from datetime import datetime
-from mymodule import format_data
+import requests
+from mymodule import CourseraData
 
 @pytest.fixture
-def sample_row():
-    return {
-        'completedAt': 1621152000000,  # May 17, 2021
-        'lastActivityAt': 1621046400000,  # May 16, 2021
-        'deletedAt': None,
-        'enrolledAt': 1620950400000,  # May 15, 2021
-        'grade': 0.85,
-        'isCompleted': 'true',
-        'overallProgress': 0.75,
-        'membershipState': 'active',
-        'contentId': 'content123',
-        'externalId': 'external123',
-        'approxTotalCourseHrs': 10,
-        'id': 'row123',
-        'contentType': 'lesson',
-        'programId': 'program123'
-    }
+def coursera_data(monkeypatch):
+    # Mocking the response from requests.get
+    class MockResponse:
+        def __init__(self, status_code, json_data):
+            self.status_code = status_code
+            self.json_data = json_data
 
-def test_format_data_completedAt(sample_row):
-    formatted_row = format_data(sample_row)
-    assert formatted_row['completedAt'] == '17-05-2021'
+        def json(self):
+            return self.json_data
 
-def test_format_data_lastActivityAt(sample_row):
-    formatted_row = format_data(sample_row)
-    assert formatted_row['lastActivityAt'] == '16-05-2021'
+    def mock_get(*args, **kwargs):
+        return MockResponse(200, {"programs": []})
 
-def test_format_data_deletedAt(sample_row):
-    formatted_row = format_data(sample_row)
-    assert formatted_row['deletedAt'] == 'Null'
+    monkeypatch.setattr(requests, 'get', mock_get)
+    
+    return CourseraData()
 
-def test_format_data_enrolledAt(sample_row):
-    formatted_row = format_data(sample_row)
-    assert formatted_row['enrolledAt'] == '15-05-2021'
+def test_get_programs(coursera_data):
+    # Calling the method under test
+    result = coursera_data.get_programs("0")
 
-def test_format_data_grade(sample_row):
-    formatted_row = format_data(sample_row)
-    assert formatted_row['grade'] == 85.0
+    # Assertions
+    assert requests.get.called_once_with(
+        "https://api.coursera.org/api/businesses.v1/eb9rVSdASBGpRxlxirYAnQ/programs?start=0&limit=1000",
+        headers={"Authorization": "Bearer <access_token>"}
+    )
+    assert result.status_code == 200
+    assert result.json() == {"programs": []}
 
-def test_format_data_isCompleted_true(sample_row):
-    formatted_row = format_data(sample_row)
-    assert formatted_row['isCompleted'] is True
+def test_get_programs_exception(coursera_data, monkeypatch):
+    # Mocking an exception raised by requests.get
+    def mock_get_exception(*args, **kwargs):
+        raise requests.exceptions.RequestException()
 
-def test_format_data_isCompleted_false(sample_row):
-    sample_row['isCompleted'] = 'false'
-    formatted_row = format_data(sample_row)
-    assert formatted_row['isCompleted'] is False
+    monkeypatch.setattr(requests, 'get', mock_get_exception)
 
-def test_format_data_isCompleted_none(sample_row):
-    sample_row['isCompleted'] = None
-    formatted_row = format_data(sample_row)
-    assert formatted_row['isCompleted'] is False
+    # Calling the method under test
+    result = coursera_data.get_programs("0")
 
-def test_format_data_additional_fields(sample_row):
-    formatted_row = format_data(sample_row)
-    assert formatted_row['overallProgress'] == 0.75
-    assert formatted_row['membershipState'] == 'active'
-    assert formatted_row['contentId'] == 'content123'
-    assert formatted_row['externalId'] == 'external123'
-    assert formatted_row['approxTotalCourseHrs'] == 10
-    assert formatted_row['id'] == 'row123'
-    assert formatted_row['contentType'] == 'lesson'
-    assert formatted_row['programId'] == 'program123'
+    # Assertions
+    assert result is None
